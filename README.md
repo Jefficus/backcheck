@@ -3,29 +3,29 @@ Backcheck is a simple regression testing tool for command line scripts and apps.
 It works on a simple principle: when a command works correctly for a particular combination of arguments, take a snapshot of the command invokation and its output and store those in a vault. At any time in the future, all snapshots in the vault can be retested to be sure they still produce the correct output.
 
 Usage: 
-	backcheck [options]
-	backcheck -h | --help
-	backcheck -v | --verbose
-	backcheck -V | --version
+	backcheck [options]  
+	backcheck -h | --help  
+	backcheck -v | --verbose  
+	backcheck -V | --version  
 
-Options:
-	-c DIR       # Confirm all recorded snapshots are still correct
-	-l DIR       # List all snapshotted command lines
-	-r CMDSTR    # Record snapshot of CMDSTR into the vault
-	-f           # Force -r to overwrite the existing snapshot of CMDSTR
-	-t CMDSTR    # Verify snapshot of given CMDSTR, if one exists
-	-v           # Display verbose output
-	-V           # Display version information
+Options:  
+	-c DIR       # Confirm all recorded snapshots are still correct  
+	-l DIR       # List all snapshotted command lines  
+	-r CMDSTR    # Record snapshot of CMDSTR into the vault  
+	-f           # Force -r to overwrite the existing snapshot of CMDSTR  
+	-t CMDSTR    # Verify snapshot of given CMDSTR, if one exists  
+	-v           # Display verbose output  
+	-V           # Display version information  
 
 There are three basic operations:
 
-	 Record a new command snapshot with:
+	 Record a new command snapshot with:  
 			backcheck -r "mycommand arg1 arg2..."
 
-	 Confirm correct behavior of a specific command with:
+	 Confirm correct behavior of a specific command with:  
 		  backcheck -t "mycommand arg1 arg2..."
 
-	 Confirm correct behavior of all snapshots with:
+	 Confirm correct behavior of all snapshots with:  
 		  backcheck -c VAULTDIR
 
 By default, the vault directory is stored in ./test-mycommand, and
@@ -48,5 +48,5 @@ characters will also be ignored, although they will be listed as
 unknown files in the -l listing.
 
 
-Created 2018 by Jefferson Smith <jefferson@smithicus.com>
+Created 2018 by Jefferson Smith <jefferson@smithicus.com>  
 Check out my tools, videos, and novels at http://creativityhacker.ca
