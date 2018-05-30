@@ -1,0 +1,211 @@
+#!/usr/bin/env python
+"""
+   backcheck:  A console command for regression testing console commands.
+
+   Backcheck works on a simple principle: when a command works correctly
+   for a particular combination of arguments, take a snapshot of the
+   command invokation and its output and store those in a vault. At any
+   time in the future, all snapshots in the vault can be retested to be
+   sure they still produce the correct output.
+
+   Usage: 
+      backcheck [options]
+      backcheck -h | --help
+      backcheck -v | --verbose
+      backcheck -V | --version
+
+   Options:
+      -d DIR       # Verify all recorded snapshots are still correct
+      -l DIR       # List all snapshotted command lines
+      -r CMDSTR    # Record snapshot of CMDSTR into the vault
+      -f           # Force -r to overwrite the existing snapshot of CMDSTR
+      -t CMDSTR    # Verify snapshot of given CMDSTR, if one exists
+      -v           # Display verbose output
+      -V           # Display version information
+
+   There are three basic operations:
+
+       Record a new command snapshot with:
+            backcheck -r "mycommand arg1 arg2..."
+
+       Confirm correct behavior of a specific command with:
+           backcheck -t "mycommand arg1 arg2..."
+
+       Confirm correct behavior of all snapshots with:
+           backcheck -d VAULTDIR
+
+   By default, the vault directory is stored in ./test-mycommand, and
+   that vault is created automatically if it does not already exist.
+
+   Snapshot files in the vault are named with an MD5 hash of the command
+   line being recorded, and the contents of the file are as follows:
+       Line 1: the command line that generated the output
+       Line 2+: the generated output
+
+   Whether invoked individually or for all snapshots, verification is
+   performed by running the command line again, capturing its output,
+   and comparing to the snapshot content. If they are identical, the
+   test passes. If they differ in any way, the command fails.
+
+   Any data files required for testing can be stored in the vault
+   directory and will be ignored by the -d command so long as the
+   filename begins with 'data'. 
+
+
+   Created 2018 by Jefferson Smith <jefferson@smithicus.com>
+   Check out my tools, videos, and novels at http://creativityhacker.ca
+"""
+
+import os
+import re
+import hashlib
+import subprocess as sp
+from docopt import docopt
+
+# process command line args
+args = docopt(__doc__, version='backcheck version 0.0.1')
+#print args
+
+def mention(outstr):
+    if args['-v']:
+        print outstr
+
+vaultdir = ''
+
+
+def GetFilenameFromCommandString(cmdstr):
+    fn = hashlib.md5(cmdstr).hexdigest()
+    # make sure no snapshot files get
+    # accidentally treated as data files
+    if fn.startswith('data'):
+        fn = fn[4:]
+    return fn
+
+
+def RecordCommandOutputToVault(cmdstr):
+    testcmd = cmdstr.split()
+    vaultdir = "test-%s" % testcmd[0]
+    outstr = sp.check_output(testcmd)
+    fname = GetFilenameFromCommandString(cmdstr)
+    outpath = os.path.join(vaultdir, fname)
+    if os.path.exists(outpath) and not args['-f']:
+        print "That command is already recorded in the vault."
+        print "Use -f to force an overwrite."
+        exit()
+    with open(outpath, 'w') as fh:
+        fh.write(args['-r'])
+        fh.write("\n")
+        fh.write(outstr)
+    print "Recorded output to %s" % outpath
+
+
+def commandMatchesVault(cmdstr):
+    fname = GetFilenameFromCommandString(cmdstr)
+    cmdargs = cmdstr.split()
+    cmdoutstr = sp.check_output(cmdargs)
+    vaultdir = "test-%s" % cmdargs[0]
+    vaultoutstr = ''
+    outpath = os.path.join(vaultdir, fname)
+    with open(outpath, 'r') as fh:
+        vaultoutstr = ''.join(fh.readlines()[1:])
+    #print cmdoutstr
+    #print
+    #print vaultoutstr
+    return cmdoutstr == vaultoutstr
+
+def IsSnapshotFile(fname):
+    return re.match("^[A-Za-z0-9]+$", fname)
+
+if args['-r']:
+    cmdstr = args['-r']
+    cmdargs = cmdstr.split()
+    vaultdir = "test-%s" % cmdargs[0]
+
+    if not os.path.exists(vaultdir):
+        print "Creating test vault: %s" % vaultdir
+        os.makedirs(vaultdir)
+
+    RecordCommandOutputToVault(cmdstr)
+
+
+if args['-t']:
+    cmdstr = args['-t']
+    cmdargs = cmdstr.split()
+    fname = GetFilenameFromCommandString(cmdstr)
+    vaultdir = "test-%s" % cmdargs[0]
+    outpath = os.path.join(vaultdir, fname)
+    if not os.path.exists(outpath):
+        print "That command is not recorded in the vault."
+        print "TEST FAILED."
+        exit()
+    if commandMatchesVault(cmdstr):
+        print "Test passed."
+    else:
+        print "TEST FAILED."
+
+if args['-l']:
+    vaultdir = args['-l']
+    dfiles = []
+    commands = []
+    unknowns = []
+    files = os.listdir(vaultdir)
+    cmdstrs = []
+    for f in files:
+        if f.startswith('data'):
+            dfiles.append(f)
+        elif IsSnapshotFile(f):
+            cmdstr = ''
+            testpath = os.path.join(vaultdir, f)
+            with open(testpath, 'r') as fh:
+                cmdstr = fh.readline().strip()
+            commands.append(cmdstr)
+        else:
+            unknowns.append(f)
+    print "Data files found: %d" % len(dfiles)
+    if len(dfiles):
+        for d in dfiles:
+            print "  %s" % d
+    else:
+        print "  None"
+    print
+
+    print "Snapshot files found: %d" % len(commands)
+    if len(commands):
+        for c in commands:
+            print "  %s" % c
+    else:
+        print "  None"
+    print
+
+    if len(unknowns):
+        print "Unknown files found: %d" % len(unknowns)
+        for u in unknowns:
+            print "  %s" % u
+        print
+
+if args['-d']:
+    passed = 0
+    tried = 0
+    failed = 0
+    vaultdir = args['-d']
+    files = os.listdir(vaultdir)
+    cmdstrs = []
+    for f in files:
+        if not f.startswith('data') and IsSnapshotFile(f):
+            cmdstr = ''
+            testpath = os.path.join(vaultdir, f)
+            with open(testpath, 'r') as fh:
+                cmdstr = fh.readline().strip()
+            tried += 1
+            if commandMatchesVault(cmdstr):
+                print "passed: %s" % cmdstr
+                passed += 1
+            else:
+                print "FAILED: %s" % cmdstr
+                failed += 1
+    print "Tests found: %d" % tried
+    print "Tests passed: %d" % passed
+    if failed:
+        print "Tests FAILED: %d" % failed
+    else:
+        print "Tests failed: %d" % failed
