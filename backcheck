@@ -15,7 +15,7 @@
       backcheck -V | --version
 
    Options:
-      -d DIR       # Verify all recorded snapshots are still correct
+      -c DIR       # Confirm all recorded snapshots are still correct
       -l DIR       # List all snapshotted command lines
       -r CMDSTR    # Record snapshot of CMDSTR into the vault
       -f           # Force -r to overwrite the existing snapshot of CMDSTR
@@ -32,7 +32,7 @@
            backcheck -t "mycommand arg1 arg2..."
 
        Confirm correct behavior of all snapshots with:
-           backcheck -d VAULTDIR
+           backcheck -c VAULTDIR
 
    By default, the vault directory is stored in ./test-mycommand, and
    that vault is created automatically if it does not already exist.
@@ -48,8 +48,10 @@
    test passes. If they differ in any way, the command fails.
 
    Any data files required for testing can be stored in the vault
-   directory and will be ignored by the -d command so long as the
-   filename begins with 'data'. 
+   directory and will be ignored by the -c command so long as the
+   filename begins with 'data'. Files that include non-hexadecimal
+   characters will also be ignored, although they will be listed as
+   unknown files in the -l listing.
 
 
    Created 2018 by Jefferson Smith <jefferson@smithicus.com>
@@ -183,11 +185,11 @@ if args['-l']:
             print "  %s" % u
         print
 
-if args['-d']:
+if args['-c']:
     passed = 0
     tried = 0
     failed = 0
-    vaultdir = args['-d']
+    vaultdir = args['-c']
     files = os.listdir(vaultdir)
     cmdstrs = []
     for f in files:
