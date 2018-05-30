@@ -32,8 +32,10 @@ By default, the vault directory is stored in ./test-mycommand, and
 that vault is created automatically if it does not already exist.
 
 Snapshot files in the vault are named with an MD5 hash of the command
-line being recorded, and the contents of the file are as follows:
+line being recorded, and the contents of the file are as follows:  
+
 	 Line 1: the command line that generated the output
+    
 	 Line 2+: the generated output
 
 Whether invoked individually or for all snapshots, verification is
