@@ -2,13 +2,15 @@ Backcheck is a simple regression testing tool for command line scripts and apps.
 
 It works on a simple principle: when a command works correctly for a particular combination of arguments, take a snapshot of the command invokation and its output and store those in a vault. At any time in the future, all snapshots in the vault can be retested to be sure they still produce the correct output.
 
-Usage: 
+Usage 
+-----
 	backcheck [options]  
 	backcheck -h | --help  
 	backcheck -v | --verbose  
 	backcheck -V | --version  
 
-Options:  
+Options  
+-------
 	-c DIR       # Confirm all recorded snapshots are still correct  
 	-l DIR       # List all snapshotted command lines  
 	-r CMDSTR    # Record snapshot of CMDSTR into the vault  
@@ -17,6 +19,8 @@ Options:
 	-v           # Display verbose output  
 	-V           # Display version information  
 
+Example Usage
+-------------
 There are three basic operations:
 
 	 Record a new command snapshot with:  
@@ -28,6 +32,8 @@ There are three basic operations:
 	 Confirm correct behavior of all snapshots with:  
 		  backcheck -c VAULTDIR
 
+The Vault
+---------
 By default, the vault directory is stored in ./test-mycommand, and
 that vault is created automatically if it does not already exist.
 
@@ -38,6 +44,8 @@ line being recorded, and the contents of the file are as follows:
     
 	 Line 2+: the generated output
 
+Verification
+------------
 Whether invoked individually or for all snapshots, verification is
 performed by running the command line again, capturing its output,
 and comparing to the snapshot content. If they are identical, the
@@ -48,6 +56,13 @@ directory and will be ignored by the -c command so long as the
 filename begins with 'data'. Files that include non-hexadecimal
 characters will also be ignored, although they will be listed as
 unknown files in the -l listing.
+
+State Management
+----------------
+Bear in mind that the intention is to be VERY simple. In my world, 
+that means each test is completely independant. If you need setup 
+and teardown capabilities, you probably want a more full-featured
+regression testing tool.
 
 
 Created 2018 by Jefferson Smith  
